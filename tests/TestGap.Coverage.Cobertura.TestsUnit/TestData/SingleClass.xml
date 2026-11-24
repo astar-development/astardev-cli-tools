@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<coverage>
+  <packages>
+    <package>
+      <classes>
+
+        <class
+            name="Foo.Bar.SyncEngine"
+            filename="SyncEngine.cs"
+            branch-rate="0.5">
+
+        </class>
+
+      </classes>
+    </package>
+  </packages>
+</coverage>

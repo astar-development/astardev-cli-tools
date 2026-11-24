@@ -8,7 +8,7 @@ public class CoverageClassShould
     [Fact]
     public void calculate_the_branch_coverage_percentage()
     {
-        var coverage = new CoverageClass(
+        var coverage = new CoverageClass(typeof(TestGap.Core.Models.CoverageClass).Assembly.FullName!,
             FullyQualifiedName: "Foo.Bar.SyncEngine",
             SourceFile: "SyncEngine.cs",
             BranchCoverage: new BranchCoverage(Covered: 5, Total: 10));
