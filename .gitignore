@@ -48,7 +48,8 @@ bld/
 # Visual Studio 2017 auto generated files
 Generated\ Files/
 
-# MSTest test Results
+# Test Results
+[Cc]overage[Rr]eport*/
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 *.trx
