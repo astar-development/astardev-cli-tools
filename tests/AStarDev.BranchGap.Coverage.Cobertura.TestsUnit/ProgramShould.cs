@@ -108,6 +108,6 @@ public class ProgramShould
     {
         var analysis = await provider.LoadAsync(TestFile.GetPath("NestedClasses.xml"), TestContext.Current.CancellationToken);
 
-        analysis.Classes[0].BranchLines.Single(l => l.LineNumber == 10).ShouldBe(new BranchLine(10, 1, 2));
+        analysis.Classes[0].BranchLines.Single(l => l.LineNumber == 10).ShouldBe(new BranchLine(10, 1, 2, "Foo.cs"));
     }
 }

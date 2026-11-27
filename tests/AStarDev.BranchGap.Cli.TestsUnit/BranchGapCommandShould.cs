@@ -195,4 +195,67 @@ public class BranchGapCommandShould
         exit.ShouldNotBe(BranchGapCommand.Success);
         error.ShouldContain("--fail-under must be between 0 and 100.");
     }
+
+    private static async Task<(string Report, string Root)> ReportWithSource()
+    {
+        var root = Directory.CreateTempSubdirectory().FullName;
+        await File.WriteAllTextAsync(Path.Combine(root, "Foo.cs"), "namespace N;\npublic class Foo\n{\n    public int Bar(int a)\n    {\n        if (a > 0)\n        {\n            return 1;\n        }\n\n        return 2;\n    }\n}\n", TestContext.Current.CancellationToken);
+        var report = Path.Combine(root, "r.xml");
+        await File.WriteAllTextAsync(report, """<coverage><packages><package name="P"><classes><class name="N.Foo" filename="/build/agent/src/Foo.cs"><lines><line number="6" branch="True" condition-coverage="50% (1/2)" /></lines></class></classes></package></packages></coverage>""", TestContext.Current.CancellationToken);
+        return (report, root);
+    }
+
+    [Fact]
+    public async Task show_the_untaken_construct_per_class_when_given_a_source_root()
+    {
+        var (report, root) = await ReportWithSource();
+
+        var (exit, output, _) = await Run(report, "--source-root", root);
+
+        exit.ShouldBe(BranchGapCommand.Success);
+        output.ShouldContain("Foo.Bar() line 6: if, 1 of 2 untaken: if (a > 0)");
+    }
+
+    [Fact]
+    public async Task rank_members_when_level_is_method()
+    {
+        var (report, root) = await ReportWithSource();
+
+        var (exit, output, _) = await Run(report, "--source-root", root, "--level", "method");
+
+        exit.ShouldBe(BranchGapCommand.Success);
+        output.ShouldContain("1 untaken");
+        output.ShouldContain("Foo.Bar()");
+        output.ShouldContain("line 6: if");
+    }
+
+    [Fact]
+    public async Task carry_the_sites_in_json()
+    {
+        var (report, root) = await ReportWithSource();
+
+        var (_, output, _) = await Run(report, "--source-root", root, "--format", "json");
+
+        var site = System.Text.Json.JsonDocument.Parse(output).RootElement.GetProperty("classes")[0].GetProperty("sites")[0];
+        site.GetProperty("member").GetString().ShouldBe("Foo.Bar()");
+        site.GetProperty("construct").GetString().ShouldBe("if");
+    }
+
+    [Fact]
+    public async Task require_a_source_root_for_method_level()
+    {
+        var (exit, _, error) = await Run(await HalfCovered(), "--level", "method");
+
+        exit.ShouldBe(BranchGapCommand.BadInput);
+        error.ShouldContain("--level method needs --source-root.");
+    }
+
+    [Fact]
+    public async Task fail_when_the_source_root_does_not_exist()
+    {
+        var (exit, _, error) = await Run(await HalfCovered(), "--source-root", "/no/such/dir");
+
+        exit.ShouldBe(BranchGapCommand.BadInput);
+        error.ShouldContain("Source root not found");
+    }
 }

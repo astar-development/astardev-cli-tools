@@ -21,11 +21,12 @@ public sealed partial class CoberturaCoverageProvider : ICoverageProvider
 
     private static CoverageClass ToCoverageClass(XElement classElement)
     {
-        var lines = GetBranchLines(classElement);
+        var sourceFile = classElement.Attribute("filename")?.Value ?? string.Empty;
+        var lines = GetBranchLines(classElement, sourceFile);
         return new CoverageClass(
             AssemblyName: classElement.Parent?.Parent?.Attribute("name")?.Value ?? string.Empty,
             FullyQualifiedName: ParentTypeName(classElement.Attribute("name")?.Value ?? string.Empty),
-            SourceFile: classElement.Attribute("filename")?.Value ?? string.Empty,
+            SourceFile: sourceFile,
             BranchCoverage: new BranchCoverage(lines.Sum(l => l.Covered), lines.Sum(l => l.Total)),
             BranchLines: lines);
     }
@@ -48,21 +49,21 @@ public sealed partial class CoberturaCoverageProvider : ICoverageProvider
         return name.StartsWith('<') ? string.Empty : name;
     }
 
-    private static List<BranchLine> GetBranchLines(XElement classElement) =>
+    private static List<BranchLine> GetBranchLines(XElement classElement, string sourceFile) =>
         [.. classElement
             .Descendants("line")
             .Where(x => string.Equals(x.Attribute("branch")?.Value, "True", StringComparison.OrdinalIgnoreCase))
-            .Select(ToBranchLine)
+            .Select(x => ToBranchLine(x, sourceFile))
             .OfType<BranchLine>()
             .GroupBy(l => l.LineNumber)
             .Select(g => g.MaxBy(l => l.Covered)!)];
 
-    private static BranchLine? ToBranchLine(XElement line)
+    private static BranchLine? ToBranchLine(XElement line, string sourceFile)
     {
         var match = ConditionCoverage().Match(line.Attribute("condition-coverage")?.Value ?? string.Empty);
 
         return match.Success && int.TryParse(line.Attribute("number")?.Value, out var number)
-            ? new BranchLine(number, int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value))
+            ? new BranchLine(number, int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value), sourceFile)
             : null;
     }
 
