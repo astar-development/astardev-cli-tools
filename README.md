@@ -34,7 +34,7 @@ branchgap "TestResults/**/*.cobertura.xml" --fail-under 85       # CI gate
 | `-x, --exclude <glob>` | Class-name glob to leave out, e.g. `*.Migrations.*`. Repeatable. Also removes it from the overall figure. |
 | `-f, --format table\|json\|markdown` | Output format (default `table`). |
 | `--fail-under <pct>` | Exit code `1` when overall branch coverage is below `pct`. |
-| `--source-root <dir>` | Folder with the sources named in the report. Paths from another machine are matched by their tail. Adds the member, construct and code line of each untaken branch (Roslyn). |
+| `--source-root <dir>` | Folder with the sources named in the report. Paths from another machine are matched by their tail. Adds the member, construct and code line of each untaken branch (Roslyn). The sources must be the revision the report was built from, or lines will not line up. |
 | `--level class\|method` | Rank classes (default) or members; `method` needs `--source-root`. |
 
 Exit codes: `0` ok, `1` below `--fail-under`, `2` bad input (missing report/source root, invalid XML), other non-zero for argument errors.

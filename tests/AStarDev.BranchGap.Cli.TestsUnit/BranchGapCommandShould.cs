@@ -213,7 +213,7 @@ public class BranchGapCommandShould
         var (exit, output, _) = await Run(report, "--source-root", root);
 
         exit.ShouldBe(BranchGapCommand.Success);
-        output.ShouldContain("Foo.Bar() line 6: if, 1 of 2 untaken: if (a > 0)");
+        output.ShouldContain("Foo.Bar(int) line 6: if, 1 of 2 untaken: if (a > 0)");
     }
 
     [Fact]
@@ -225,7 +225,7 @@ public class BranchGapCommandShould
 
         exit.ShouldBe(BranchGapCommand.Success);
         output.ShouldContain("1 untaken");
-        output.ShouldContain("Foo.Bar()");
+        output.ShouldContain("Foo.Bar(int)");
         output.ShouldContain("line 6: if");
     }
 
@@ -237,7 +237,7 @@ public class BranchGapCommandShould
         var (_, output, _) = await Run(report, "--source-root", root, "--format", "json");
 
         var site = System.Text.Json.JsonDocument.Parse(output).RootElement.GetProperty("classes")[0].GetProperty("sites")[0];
-        site.GetProperty("member").GetString().ShouldBe("Foo.Bar()");
+        site.GetProperty("member").GetString().ShouldBe("Foo.Bar(int)");
         site.GetProperty("construct").GetString().ShouldBe("if");
     }
 
@@ -307,5 +307,18 @@ public class BranchGapCommandShould
 
         exit.ShouldBe(BranchGapCommand.Success);
         output.ShouldContain("(1/2)");
+    }
+
+    [Fact]
+    public async Task escape_pipes_and_backticks_in_markdown()
+    {
+        var root = Directory.CreateTempSubdirectory().FullName;
+        await File.WriteAllTextAsync(Path.Combine(root, "Ops.cs"), "class Ops\n{\n    public static bool operator |(Ops a, Ops b)\n    {\n        var s = a != null ? \"`x`\" : \"y\";\n        return true;\n    }\n}\n", TestContext.Current.CancellationToken);
+        var report = Path.Combine(root, "r.xml");
+        await File.WriteAllTextAsync(report, Cobertura("Ops", """<line number="5" branch="True" condition-coverage="50% (1/2)" />""").Replace("Ops.cs", "Ops.cs"), TestContext.Current.CancellationToken);
+
+        var (_, output, _) = await Run(report, "--source-root", root, "--format", "markdown");
+
+        output.ShouldContain("`` var s = a != null ? \"`x`\" : \"y\"; ``");
     }
 }

@@ -41,4 +41,21 @@ public class CoverageMergerShould
 
         merged.Classes[0].BranchCoverage.ShouldBe(new BranchCoverage(3, 6));
     }
+
+    [Fact]
+    public void keep_covered_and_total_from_the_same_report()
+    {
+        var merged = CoverageMerger.Merge([Make("Foo", new BranchLine(5, 2, 2)), Make("Foo", new BranchLine(5, 0, 5))]);
+
+        merged.Classes[0].BranchCoverage.ShouldBe(new BranchCoverage(2, 2));
+    }
+
+    [Fact]
+    public void treat_windows_and_linux_spellings_of_a_file_as_one()
+    {
+        var merged = CoverageMerger.Merge([Make("Foo", new BranchLine(5, 1, 2, @"src\Foo.cs")), Make("Foo", new BranchLine(5, 1, 2, "src/Foo.cs"))]);
+
+        merged.Classes[0].BranchLines.Count.ShouldBe(1);
+        merged.Classes[0].BranchCoverage.ShouldBe(new BranchCoverage(1, 2));
+    }
 }

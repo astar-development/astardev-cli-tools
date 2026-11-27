@@ -48,6 +48,26 @@ public static class ReportFormatter
     private static string SiteLine(BranchSite s) =>
         $"line {s.Line}: {s.Construct}, {s.Uncovered} of {s.Total} untaken: {s.Code}";
 
+    private static string MarkdownSiteLine(BranchSite s) =>
+        $"line {s.Line}: {s.Construct}, {s.Uncovered} of {s.Total} untaken: {CodeSpan(s.Code)}";
+
+    // A fence one backtick longer than any run inside, padded so a leading or trailing backtick survives.
+    private static string CodeSpan(string code)
+    {
+        var longest = 0;
+        var run = 0;
+        foreach (var c in code)
+        {
+            run = c == '`' ? run + 1 : 0;
+            longest = Math.Max(longest, run);
+        }
+
+        var fence = new string('`', longest + 1);
+        return $"{fence} {code} {fence}";
+    }
+
+    private static string Cell(string text) => text.Replace("|", "\\|", StringComparison.Ordinal);
+
     private static string Table(IReadOnlyList<CoverageClass> rows, BranchCoverage overall, IReadOnlyDictionary<string, IReadOnlyList<BranchSite>> sites)
     {
         var text = new StringBuilder();
@@ -74,7 +94,7 @@ public static class ReportFormatter
         text.AppendLine("|---|---:|---:|---:|---:|");
         foreach (var row in rows)
         {
-            text.AppendLine($"| `{row.FullyQualifiedName}` | {row.BranchCoverage.Uncovered} | {row.BranchCoverage.Covered} | {row.BranchCoverage.Total} | {row.BranchCoverage.Percentage:0.#} |");
+            text.AppendLine($"| `{Cell(row.FullyQualifiedName)}` | {row.BranchCoverage.Uncovered} | {row.BranchCoverage.Covered} | {row.BranchCoverage.Total} | {row.BranchCoverage.Percentage:0.#} |");
         }
 
         foreach (var row in rows.Where(r => sites.GetValueOrDefault(r.FullyQualifiedName) is { Count: > 0 }))
@@ -83,7 +103,7 @@ public static class ReportFormatter
             text.AppendLine($"`{row.FullyQualifiedName}`");
             foreach (var site in sites[row.FullyQualifiedName])
             {
-                text.AppendLine($"- `{site.Member}` {SiteLine(site)}");
+                text.AppendLine($"- {CodeSpan(site.Member)} {MarkdownSiteLine(site)}");
             }
         }
 
@@ -137,7 +157,7 @@ public static class ReportFormatter
         text.AppendLine("|---|---|---:|---:|---:|---:|");
         foreach (var row in rows)
         {
-            text.AppendLine($"| `{row.Name}` | {Path.GetFileName(row.SourceFile)} | {row.Coverage.Uncovered} | {row.Coverage.Covered} | {row.Coverage.Total} | {row.Coverage.Percentage:0.#} |");
+            text.AppendLine($"| `{Cell(row.Name)}` | {Cell(Path.GetFileName(row.SourceFile))} | {row.Coverage.Uncovered} | {row.Coverage.Covered} | {row.Coverage.Total} | {row.Coverage.Percentage:0.#} |");
         }
 
         return text.ToString();
