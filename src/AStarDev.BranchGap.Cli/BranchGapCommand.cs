@@ -23,7 +23,7 @@ public static class BranchGapCommand
 
         var format = new Option<OutputFormat>("--format", "-f") { Description = "Output format: table, json or markdown.", DefaultValueFactory = _ => OutputFormat.Table };
         var failUnder = new Option<double?>("--fail-under") { Description = "Exit with code 1 when overall branch coverage is below this percentage (0-100)." };
-        failUnder.Validators.Add(r => { if (r.GetValueOrDefault<double?>() is < 0 or > 100) { r.AddError("--fail-under must be between 0 and 100."); } });
+        failUnder.Validators.Add(r => { if (r.GetValueOrDefault<double?>() is { } v && !(v >= 0 && v <= 100)) { r.AddError("--fail-under must be between 0 and 100."); } });
 
         var sourceRoot = new Option<DirectoryInfo?>("--source-root") { Description = "Folder holding the sources named in the report. Shows which construct each untaken branch is (needs the sources, not just the report)." };
         var level = new Option<ReportLevel>("--level") { Description = "Rank classes (default) or members. Members need --source-root.", DefaultValueFactory = _ => ReportLevel.Class };
@@ -73,6 +73,12 @@ public static class BranchGapCommand
                 }
 
                 var threshold = parse.GetValue(failUnder);
+                if (threshold is not null && ranked.Overall.Total == 0)
+                {
+                    await error.WriteLineAsync("No branch data found in the report(s); cannot apply --fail-under.");
+                    return BadInput;
+                }
+
                 if (threshold is not null && ranked.Overall.Percentage < threshold)
                 {
                     await error.WriteLineAsync($"Branch coverage {ranked.Overall.Percentage:0.0}% is below the required {threshold}%.");
@@ -84,6 +90,11 @@ public static class BranchGapCommand
             catch (XmlException ex)
             {
                 await error.WriteLineAsync($"Not a valid coverage report: {ex.Message}");
+                return BadInput;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                await error.WriteLineAsync($"Cannot read input: {ex.Message}");
                 return BadInput;
             }
         });

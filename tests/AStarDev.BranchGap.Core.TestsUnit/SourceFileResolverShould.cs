@@ -13,12 +13,41 @@ public class SourceFileResolverShould
     }
 
     [Fact]
-    public void use_the_reported_path_when_it_exists()
+    public void use_the_reported_path_when_it_exists_inside_the_root()
     {
         var root = Directory.CreateTempSubdirectory().FullName;
         var file = MakeFile(root, "a.cs");
 
-        SourceFileResolver.Resolve(file, "/elsewhere").ShouldBe(file);
+        SourceFileResolver.Resolve(file, root).ShouldBe(file);
+    }
+
+    [Fact]
+    public void never_return_a_file_outside_the_root_even_when_the_report_names_it()
+    {
+        var root = Directory.CreateTempSubdirectory().FullName;
+        var outside = MakeFile(Directory.CreateTempSubdirectory().FullName, "secret.cs");
+
+        SourceFileResolver.Resolve(outside, root).ShouldBe(null);
+    }
+
+    [Fact]
+    public void ignore_dot_dot_segments_so_the_root_cannot_be_escaped()
+    {
+        var parent = Directory.CreateTempSubdirectory().FullName;
+        var root = Path.Combine(parent, "src");
+        Directory.CreateDirectory(root);
+        MakeFile(parent, "secret.cs");
+
+        SourceFileResolver.Resolve("../secret.cs", root).ShouldBe(null);
+    }
+
+    [Fact]
+    public void prefer_the_copy_under_the_root_over_a_relative_path_in_the_working_directory()
+    {
+        var root = Directory.CreateTempSubdirectory().FullName;
+        var file = MakeFile(root, Path.Combine("Proj", "Foo.cs"));
+
+        SourceFileResolver.Resolve("Proj/Foo.cs", root).ShouldBe(file);
     }
 
     [Fact]
