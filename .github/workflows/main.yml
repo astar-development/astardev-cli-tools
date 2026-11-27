@@ -1,4 +1,4 @@
-name: Build the File App
+name: Build AStarDev.BranchGap
 
 on:
   workflow_dispatch:
@@ -14,10 +14,9 @@ concurrency:
 
 env:
   SONAR_PROJECT: ${{ github.event.repository.name }}
-  PASCAL_REPO_NAME: Will.Be.Set.By.Step
-  SOLUTION_FILE: Will.Be.Set.slnx
+  SOLUTION_FILE: AStarDev.BranchGap.slnx
   CONFIGURATION: Release
-  DOTNET_CORE_VERSION: 10.0.100
+  DOTNET_CORE_VERSION: 11.0.x
   WORKING_DIRECTORY: src/
 permissions:
   contents: read
@@ -48,46 +47,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
               
-      - name: PascalCase repo name with rules
-        run: |
-          raw="${{ github.event.repository.name }}"
-
-          # Split on '-' and PascalCase each segment, rejoin with '.'
-          pascal=$(echo "$raw" | awk -F'-' '{
-            OFS="."
-            for (i=1; i<=NF; i++) {
-              $i = toupper(substr($i,1,1)) substr($i,2)
-            }
-            print
-          }')
-
-          # Adjust leading Astar → AStar
-          pascal=$(echo "$pascal" | sed 's/^Astar/AStar/')
-
-          # Add suffix
-          pascal="${pascal}.slnx"
-
-          echo "PASCAL_REPO_NAME=$pascal" >> $GITHUB_ENV
-
-          echo "SOLUTION_FILE=$pascal" >> $GITHUB_ENV
-
-      - name: PASCAL_REPO_NAME
-        run: echo ${{ env.PASCAL_REPO_NAME }}
-
-      - name: SOLUTION_FILE
-        run: echo ${{ env.SOLUTION_FILE }}
-
-      - name: Restore ${{ env.PASCAL_REPO_NAME }}
-        run: dotnet restore ${{ env.PASCAL_REPO_NAME }}
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
 
       - name: Build solution
         run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release
 
-      - run: echo "REPO_NAME=${{ github.event.repository.name }}" >> $GITHUB_ENV
 
-      - name: Run unit tests and collect coverage (XPlat)
-        run: |
-          dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory TestResults --filter "FullyQualifiedName!~Integration&FullyQualifiedName!~EndToEnd" ${{ env.SOLUTION_FILE }}.slnx
+      - name: Run unit tests and collect coverage
+        run: dotnet test --solution ${{ env.SOLUTION_FILE }} --configuration Release --no-build --coverage --coverage-output-format cobertura --results-directory TestResults
 
       - name: Upload TestResults artifact (contains coverage)
         if: success() || failure()
@@ -146,7 +114,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           ./.sonar/scanner/dotnet-sonarscanner begin /k:"astar-development_${{ env.SONAR_PROJECT }}" /o:"astar-development" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths=coverage-merged/Opencover.xml /d:sonar.scanner.scanAll=false
-          dotnet build --configuration Release
+          dotnet build ${{ env.SOLUTION_FILE }} --configuration Release
           ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
   build:
@@ -168,7 +136,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build solution
-        run: dotnet build --configuration Release
+        run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release
 
   coverage-aggregate:
     name: Aggregate coverage reports
@@ -189,7 +157,7 @@ jobs:
 
       - name: Merge reports and generate HTML + Cobertura + OpenCover
         run: |
-          reportgenerator -reports:"artifacts/**/coverage.cobertura.xml" -targetdir:coverage-merged -reporttypes:"Html;Cobertura;Opencover"
+          reportgenerator -reports:"artifacts/**/*.cobertura.xml" -targetdir:coverage-merged -reporttypes:"Html;Cobertura;Opencover"
 
       - name: Upload merged coverage
         uses: actions/upload-artifact@v4
