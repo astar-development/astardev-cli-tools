@@ -22,7 +22,7 @@ public class BranchGapCommandShould
 
         exit.ShouldBe(BranchGapCommand.Success);
         output.ShouldContain("Top 3 classes");
-        output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length.ShouldBe(4);
+        output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length.ShouldBe(5);
     }
 
     [Fact]
@@ -136,5 +136,63 @@ public class BranchGapCommandShould
         var (_, output, _) = await Run(Path.Combine(dir, "**", "*.cobertura.xml"));
 
         output.ShouldContain("Deep");
+    }
+
+    private static async Task<string> HalfCovered() =>
+        Path.Combine(await TempDir(("r.cobertura.xml", Cobertura("Foo", """<line number="1" branch="True" condition-coverage="50% (1/2)" />"""))), "r.cobertura.xml");
+
+    [Fact]
+    public async Task show_the_overall_branch_coverage()
+    {
+        var (_, output, _) = await Run(await HalfCovered());
+
+        output.ShouldContain("Overall branch coverage: 50.0% (1/2)");
+    }
+
+    [Fact]
+    public async Task write_json_when_asked()
+    {
+        var (exit, output, _) = await Run(await HalfCovered(), "--format", "json");
+
+        exit.ShouldBe(BranchGapCommand.Success);
+        var json = System.Text.Json.JsonDocument.Parse(output).RootElement;
+        json.GetProperty("overall").GetProperty("total").GetInt32().ShouldBe(2);
+        json.GetProperty("classes")[0].GetProperty("name").GetString().ShouldBe("Foo");
+        json.GetProperty("classes")[0].GetProperty("untaken").GetInt32().ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task write_a_markdown_table_when_asked()
+    {
+        var (_, output, _) = await Run(await HalfCovered(), "--format", "markdown");
+
+        output.ShouldContain("| Class | Untaken | Covered | Total | % |");
+        output.ShouldContain("| `Foo` | 1 | 1 | 2 | 50 |");
+    }
+
+    [Fact]
+    public async Task exit_with_one_when_overall_coverage_is_below_fail_under()
+    {
+        var (exit, _, error) = await Run(await HalfCovered(), "--fail-under", "60");
+
+        exit.ShouldBe(BranchGapCommand.BelowThreshold);
+        error.ShouldContain("Branch coverage 50.0% is below the required 60%.");
+    }
+
+    [Fact]
+    public async Task exit_with_zero_when_overall_coverage_meets_fail_under()
+    {
+        var (exit, _, _) = await Run(await HalfCovered(), "--fail-under", "50");
+
+        exit.ShouldBe(BranchGapCommand.Success);
+    }
+
+    [Fact]
+    public async Task reject_a_fail_under_outside_zero_to_one_hundred()
+    {
+        var (exit, _, error) = await Run(await HalfCovered(), "--fail-under", "101");
+
+        exit.ShouldNotBe(BranchGapCommand.Success);
+        error.ShouldContain("--fail-under must be between 0 and 100.");
     }
 }
