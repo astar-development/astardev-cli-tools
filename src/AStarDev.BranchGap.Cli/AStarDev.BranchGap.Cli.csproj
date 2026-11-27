@@ -4,6 +4,10 @@
     <ProjectReference Include="..\AStarDev.BranchGap.Coverage.Cobertura\AStarDev.BranchGap.Coverage.Cobertura.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="3.0.0" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net11.0</TargetFramework>
