@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AStarDev.BranchGap.Coverage.Cobertura\AStarDev.BranchGap.Coverage.Cobertura.csproj" />
+    <ProjectReference Include="..\AStarDev.BranchGap.Roslyn\AStarDev.BranchGap.Roslyn.csproj" />
   </ItemGroup>
 
   <ItemGroup>

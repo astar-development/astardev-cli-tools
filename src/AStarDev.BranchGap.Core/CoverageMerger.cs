@@ -20,9 +20,9 @@ public static class CoverageMerger
         var members = group.ToList();
         var lines = members
             .SelectMany(m => m.BranchLines)
-            .GroupBy(l => l.LineNumber)
-            .Select(g => new BranchLine(g.Key, g.Max(l => l.Covered), g.Max(l => l.Total)))
-            .OrderBy(l => l.LineNumber)
+            .GroupBy(l => (l.SourceFile, l.LineNumber))
+            .Select(g => new BranchLine(g.Key.LineNumber, g.Max(l => l.Covered), g.Max(l => l.Total), g.Key.SourceFile))
+            .OrderBy(l => l.SourceFile, StringComparer.Ordinal).ThenBy(l => l.LineNumber)
             .ToList();
 
         var coverage = lines.Count > 0
