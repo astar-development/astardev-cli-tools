@@ -31,4 +31,12 @@ public class CoverageRankingServiceShould
 
         result.Select(r => r.FullyQualifiedName).ShouldBe(["Real"]);
     }
+
+    [Fact]
+    public void keep_real_classes_whose_name_merely_contains_generated()
+    {
+        var result = CoverageRankingService.Rank([Make("App.GeneratedInvoice", 0, 4)]);
+
+        result.Select(r => r.FullyQualifiedName).ShouldBe(["App.GeneratedInvoice"]);
+    }
 }

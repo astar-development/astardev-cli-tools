@@ -12,6 +12,5 @@ public sealed record CoverageClass(
     {
     }
 
-    public bool IsCompilerGenerated =>
-        FullyQualifiedName.Contains('<') || FullyQualifiedName.Contains("Generated", StringComparison.Ordinal);
+    public bool IsCompilerGenerated => FullyQualifiedName.Contains('<');
 }

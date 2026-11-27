@@ -62,11 +62,15 @@ public sealed partial class CoberturaCoverageProvider : ICoverageProvider
     {
         var match = ConditionCoverage().Match(line.Attribute("condition-coverage")?.Value ?? string.Empty);
 
-        return match.Success && int.TryParse(line.Attribute("number")?.Value, out var number)
-            ? new BranchLine(number, int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value), sourceFile)
-            : null;
+        return match.Success
+            && int.TryParse(line.Attribute("number")?.Value, out var number)
+            && int.TryParse(match.Groups[1].ValueSpan, out var covered)
+            && int.TryParse(match.Groups[2].ValueSpan, out var total)
+            && covered <= total
+                ? new BranchLine(number, covered, total, sourceFile)
+                : null;
     }
 
-    [GeneratedRegex(@"\((\d+)/(\d+)\)")]
+    [GeneratedRegex(@"\(([0-9]+)/([0-9]+)\)")]
     private static partial Regex ConditionCoverage();
 }

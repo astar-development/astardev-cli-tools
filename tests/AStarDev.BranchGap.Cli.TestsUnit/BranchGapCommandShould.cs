@@ -258,4 +258,54 @@ public class BranchGapCommandShould
         exit.ShouldBe(BranchGapCommand.BadInput);
         error.ShouldContain("Source root not found");
     }
+
+    [Fact]
+    public async Task refuse_fail_under_when_the_reports_hold_no_branch_data()
+    {
+        var dir = await TempDir(("empty.xml", "<coverage><packages /></coverage>"));
+
+        var (exit, _, error) = await Run(Path.Combine(dir, "empty.xml"), "--fail-under", "80");
+
+        exit.ShouldBe(BranchGapCommand.BadInput);
+        error.ShouldContain("No branch data found");
+    }
+
+    [Fact]
+    public async Task reject_a_nan_fail_under()
+    {
+        var (exit, _, _) = await Run(await HalfCovered(), "--fail-under", "NaN");
+
+        exit.ShouldNotBe(BranchGapCommand.Success);
+    }
+
+    [Fact]
+    public async Task expand_wildcards_in_directory_segments_and_mid_path_double_star()
+    {
+        var dir = await TempDir();
+        foreach (var d in new[] { "run1/out", "run2/deep/out", "other/out" })
+        {
+            Directory.CreateDirectory(Path.Combine(dir, d));
+        }
+
+        await File.WriteAllTextAsync(Path.Combine(dir, "run1/out/r.xml"), Cobertura("One", """<line number="1" branch="True" condition-coverage="0% (0/2)" />"""), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(dir, "run2/deep/out/r.xml"), Cobertura("Two", """<line number="1" branch="True" condition-coverage="0% (0/2)" />"""), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(dir, "other/out/r.xml"), Cobertura("Other", """<line number="1" branch="True" condition-coverage="0% (0/2)" />"""), TestContext.Current.CancellationToken);
+
+        var (_, output, _) = await Run(Path.Combine(dir, "run*", "**", "out", "r.xml"));
+
+        output.ShouldContain("One");
+        output.ShouldContain("Two");
+        output.ShouldNotContain("Other");
+    }
+
+    [Fact]
+    public async Task ignore_branch_counts_that_overflow_instead_of_crashing()
+    {
+        var dir = await TempDir(("big.xml", Cobertura("Foo", """<line number="1" branch="True" condition-coverage="0% (0/99999999999)" /><line number="2" branch="True" condition-coverage="50% (1/2)" />""")));
+
+        var (exit, output, _) = await Run(Path.Combine(dir, "big.xml"));
+
+        exit.ShouldBe(BranchGapCommand.Success);
+        output.ShouldContain("(1/2)");
+    }
 }
