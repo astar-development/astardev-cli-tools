@@ -2,7 +2,6 @@ using System.CommandLine;
 using System.Xml;
 using AStarDev.BranchGap.Core;
 using AStarDev.BranchGap.Core.Abstractions;
-using AStarDev.BranchGap.Core.Models;
 using AStarDev.BranchGap.Coverage.Cobertura;
 
 namespace AStarDev.BranchGap.Cli;
@@ -10,6 +9,7 @@ namespace AStarDev.BranchGap.Cli;
 public static class BranchGapCommand
 {
     public const int Success = 0;
+    public const int BelowThreshold = 1;
     public const int BadInput = 2;
 
     public static RootCommand Build(TextWriter output, TextWriter error, ICoverageProvider? provider = null)
@@ -19,7 +19,11 @@ public static class BranchGapCommand
         top.Validators.Add(r => { if (r.GetValueOrDefault<int>() < 1) { r.AddError("--top must be at least 1."); } });
         var exclude = new Option<string[]>("--exclude", "-x") { Description = "Class-name glob (* and ?) to leave out. Repeatable.", DefaultValueFactory = _ => [] };
 
-        var root = new RootCommand("Lists the classes with the most untaken branches.") { reports, top, exclude };
+        var format = new Option<OutputFormat>("--format", "-f") { Description = "Output format: table, json or markdown.", DefaultValueFactory = _ => OutputFormat.Table };
+        var failUnder = new Option<double?>("--fail-under") { Description = "Exit with code 1 when overall branch coverage is below this percentage (0-100)." };
+        failUnder.Validators.Add(r => { if (r.GetValueOrDefault<double?>() is < 0 or > 100) { r.AddError("--fail-under must be between 0 and 100."); } });
+
+        var root = new RootCommand("Lists the classes with the most untaken branches.") { reports, top, exclude, format, failUnder };
         root.SetAction(async (parse, cancellationToken) =>
         {
             var requested = parse.GetValue(reports)!;
@@ -36,7 +40,15 @@ public static class BranchGapCommand
             {
                 var ranked = await new AnalyseCoverageUseCase(provider ?? new CoberturaCoverageProvider())
                     .ExecuteAsync(paths, parse.GetValue(exclude)!, cancellationToken);
-                await Render(output, ranked.Take(parse.GetValue(top)).ToList());
+                await output.WriteAsync(ReportFormatter.Format(parse.GetValue(format), [.. ranked.Classes.Take(parse.GetValue(top))], ranked.Overall));
+
+                var threshold = parse.GetValue(failUnder);
+                if (threshold is not null && ranked.Overall.Percentage < threshold)
+                {
+                    await error.WriteLineAsync($"Branch coverage {ranked.Overall.Percentage:0.0}% is below the required {threshold}%.");
+                    return BelowThreshold;
+                }
+
                 return Success;
             }
             catch (XmlException ex)
@@ -47,14 +59,5 @@ public static class BranchGapCommand
         });
 
         return root;
-    }
-
-    private static async Task Render(TextWriter output, IReadOnlyList<CoverageClass> rows)
-    {
-        await output.WriteLineAsync($"Top {rows.Count} classes by most untaken branches:");
-        foreach (var row in rows)
-        {
-            await output.WriteLineAsync($"{row.BranchCoverage.Uncovered,5} untaken  {row.BranchCoverage.Percentage,5:0.#}%  ({row.BranchCoverage.Covered}/{row.BranchCoverage.Total})  {row.FullyQualifiedName}");
-        }
     }
 }
