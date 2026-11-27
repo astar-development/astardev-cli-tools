@@ -1,6 +1,6 @@
-using TestGap.Core.Models;
+using AStarDev.BranchGap.Core.Models;
 
-namespace TestGap.Core;
+namespace AStarDev.BranchGap.Core;
 
 public sealed class CoverageRankingService
 {

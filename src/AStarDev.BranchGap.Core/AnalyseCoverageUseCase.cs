@@ -1,7 +1,7 @@
-using TestGap.Core.Abstractions;
-using TestGap.Core.Models;
+using AStarDev.BranchGap.Core.Abstractions;
+using AStarDev.BranchGap.Core.Models;
 
-namespace TestGap.Core;
+namespace AStarDev.BranchGap.Core;
 
 public sealed class AnalyseCoverageUseCase(ICoverageProvider coverageProvider)
 {

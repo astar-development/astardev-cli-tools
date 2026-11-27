@@ -1,5 +1,5 @@
-﻿using TestGap.Core;
-using TestGap.Coverage.Cobertura;
+﻿using AStarDev.BranchGap.Core;
+using AStarDev.BranchGap.Coverage.Cobertura;
 
 var path = args.Length > 0 ? args[0] : string.Empty;
 var itemsToTake = args.Length > 1 ? int.Parse(args[1]) : 10;
@@ -16,7 +16,7 @@ foreach (var ranking in worstRankings)
     Console.WriteLine($"Class: {ranking.FullyQualifiedName}, Branch Coverage: {ranking.BranchCoverage.Percentage}% (Covered: {ranking.BranchCoverage.Covered} / Total: {ranking.BranchCoverage.Total})");
 }
 
-static bool ClassesToIgnore(TestGap.Core.Models.CoverageClass coverageClass) =>
+static bool ClassesToIgnore(AStarDev.BranchGap.Core.Models.CoverageClass coverageClass) =>
     !coverageClass.FullyQualifiedName.Contains("Generated") && !coverageClass.FullyQualifiedName.Contains('<');
 
-// dotnet publish -c Release -r linux-x64 -o ./publish; clear; ./publish/TestGap.CLI tests/TestGap.Coverage.Cobertura.TestsUnit/TestData/RealCoverage.xml
+// dotnet publish -c Release -r linux-x64 -o ./publish; clear; ./publish/AStarDev.BranchGap.Cli tests/AStarDev.BranchGap.Coverage.Cobertura.TestsUnit/TestData/RealCoverage.xml

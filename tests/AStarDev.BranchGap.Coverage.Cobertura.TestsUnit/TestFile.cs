@@ -1,4 +1,4 @@
-namespace TestGap.Coverage.Cobertura.TestsUnit;
+namespace AStarDev.BranchGap.Coverage.Cobertura.TestsUnit;
 
 public static class TestFile
 {

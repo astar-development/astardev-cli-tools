@@ -1,6 +1,6 @@
-using TestGap.Core.Models;
+using AStarDev.BranchGap.Core.Models;
 
-namespace TestGap.Core.Abstractions;
+namespace AStarDev.BranchGap.Core.Abstractions;
 
 public interface ICoverageProvider
 {

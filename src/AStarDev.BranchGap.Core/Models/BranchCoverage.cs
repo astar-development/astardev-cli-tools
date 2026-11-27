@@ -1,4 +1,4 @@
-namespace TestGap.Core.Models;
+namespace AStarDev.BranchGap.Core.Models;
 
 public sealed record BranchCoverage(int Covered, int Total)
 {

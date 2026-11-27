@@ -1,9 +1,9 @@
 ﻿using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using TestGap.Core.Abstractions;
-using TestGap.Core.Models;
+using AStarDev.BranchGap.Core.Abstractions;
+using AStarDev.BranchGap.Core.Models;
 
-namespace TestGap.Coverage.Cobertura;
+namespace AStarDev.BranchGap.Coverage.Cobertura;
 
 public sealed class CoberturaCoverageProvider : ICoverageProvider
 {

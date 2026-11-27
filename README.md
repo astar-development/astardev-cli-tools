@@ -1,2 +1,2 @@
-# astar-dev-template
-Thoughts on creating a template repo
+# AStarDev.BranchGap
+Finds the classes and methods whose branches your tests never take.

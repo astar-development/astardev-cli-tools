@@ -1,10 +1,10 @@
 using System.Xml.Linq;
 using Shouldly;
-using TestGap.Core;
-using TestGap.Core.Abstractions;
-using TestGap.Core.Models;
+using AStarDev.BranchGap.Core;
+using AStarDev.BranchGap.Core.Abstractions;
+using AStarDev.BranchGap.Core.Models;
 
-namespace TestGap.Coverage.Cobertura.TestsUnit;
+namespace AStarDev.BranchGap.Coverage.Cobertura.TestsUnit;
 
 public class ProgramShould
 {
