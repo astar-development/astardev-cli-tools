@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AStarDev.BranchGap.Cli/AStarDev.BranchGap.Cli.csproj" />
+    <Project Path="src/AStarDev.BranchGap.Core/AStarDev.BranchGap.Core.csproj" />
+    <Project Path="src/AStarDev.BranchGap.Coverage.Cobertura/AStarDev.BranchGap.Coverage.Cobertura.csproj" />
+    <Project Path="src/AStarDev.BranchGap.Roslyn/AStarDev.BranchGap.Roslyn.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AStarDev.BranchGap.Core.TestsUnit/AStarDev.BranchGap.Core.TestsUnit.csproj" />
+    <Project Path="tests/AStarDev.BranchGap.Coverage.Cobertura.TestsUnit/AStarDev.BranchGap.Coverage.Cobertura.TestsUnit.csproj" />
+    <Project Path="tests/AStarDev.BranchGap.Roslyn.TestsUnit/AStarDev.BranchGap.Roslyn.TestsUnit.csproj" />
+  </Folder>
+</Solution>

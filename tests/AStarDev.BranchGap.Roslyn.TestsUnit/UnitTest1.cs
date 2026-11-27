@@ -1,4 +1,4 @@
-namespace TestGap.Roslyn.TestsUnit;
+namespace AStarDev.BranchGap.Roslyn.TestsUnit;
 
 public class UnitTest1
 {
