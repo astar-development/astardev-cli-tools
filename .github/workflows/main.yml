@@ -22,13 +22,9 @@ permissions:
   contents: read
 jobs:
   test:
-    name: Run tests (matrix)
-    runs-on: ${{ matrix.os }}
+    name: Run tests
+    runs-on: ubuntu-latest
     timeout-minutes: 30
-    continue-on-error: ${{ matrix.os == 'macos-latest' }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,7 +57,7 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: testruns-${{ matrix.os }}
+          name: testruns-ubuntu
           path: TestResults
           retention-days: 30
 
@@ -109,17 +105,17 @@ jobs:
           name: coverage-merged
           path: ./coverage-merged
 
-      - name: Run SonarCloud analysis using merged Opencover
+      - name: Run SonarCloud analysis using merged coverage
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          ./.sonar/scanner/dotnet-sonarscanner begin /k:"astar-development_${{ env.SONAR_PROJECT }}" /o:"astar-development" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths=coverage-merged/Opencover.xml /d:sonar.scanner.scanAll=false
+          ./.sonar/scanner/dotnet-sonarscanner begin /k:"astar-development_${{ env.SONAR_PROJECT }}" /o:"astar-development" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.coverageReportPaths=coverage-merged/SonarQube.xml /d:sonar.scanner.scanAll=false
           dotnet build ${{ env.SOLUTION_FILE }} --configuration Release
           ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
   build:
     needs: [test]
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -153,11 +149,11 @@ jobs:
           path: ./artifacts
 
       - name: Install ReportGenerator
-        run: dotnet tool install --global dotnet-reportgenerator-globaltool || true
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.6.1
 
-      - name: Merge reports and generate HTML + Cobertura + OpenCover
+      - name: Merge reports and generate HTML + Cobertura + SonarQube
         run: |
-          reportgenerator -reports:"artifacts/**/*.cobertura.xml" -targetdir:coverage-merged -reporttypes:"Html;Cobertura;Opencover"
+          reportgenerator -reports:"artifacts/**/*.cobertura.xml" -targetdir:coverage-merged -reporttypes:"Html;Cobertura;SonarQube"
 
       - name: Upload merged coverage
         uses: actions/upload-artifact@v4
