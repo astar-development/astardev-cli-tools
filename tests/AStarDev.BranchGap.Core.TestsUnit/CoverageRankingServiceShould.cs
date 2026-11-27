@@ -39,4 +39,23 @@ public class CoverageRankingServiceShould
 
         result.Select(r => r.FullyQualifiedName).ShouldBe(["App.GeneratedInvoice"]);
     }
+
+    [Fact]
+    public void drop_microsoft_and_system_namespaces_without_dropping_similar_names()
+    {
+        var result = CoverageRankingService.Rank([
+            Make("Microsoft.CodeAnalysis.SyntaxNode", 0, 4),
+            Make("System.String", 0, 4),
+            Make("Newtonsoft.Json.JsonConvert", 0, 4),
+            Make("Dapper.SqlMapper", 0, 4),
+            Make("Npgsql.NpgsqlConnection", 0, 4),
+            Make("Serilog.Logger", 0, 4),
+            Make("Xunit.FactAttribute", 0, 4),
+            Make("My.MicrosoftClient", 0, 4),
+            Make("Contoso.SystemTools.Client", 0, 4),
+            Make("Real", 1, 4)
+        ]);
+
+        result.Select(r => r.FullyQualifiedName).ShouldBe(["Contoso.SystemTools.Client", "My.MicrosoftClient", "Real"]);
+    }
 }

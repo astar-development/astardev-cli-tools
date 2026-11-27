@@ -25,10 +25,11 @@ branchgap a.cobertura.xml b.cobertura.xml -n 25                  # reports are m
 branchgap "TestResults/**/*.cobertura.xml" --source-root .       # + which construct is untaken
 branchgap "TestResults/**/*.cobertura.xml" --source-root . --level method
 branchgap "TestResults/**/*.cobertura.xml" --fail-under 85       # CI gate
+branchgap "../astar-dev-mono/TestResults/**/*.cobertura.xml"     # real path, doesn't work though
 ```
 
 | Option | Meaning |
-|---|---|
+| --- | --- |
 | `<reports>...` | Cobertura XML files. `*`/`?` in the file name are expanded (also on Windows); `**` in the folder part searches subfolders. Reports are merged. |
 | `-n, --top <n>` | How many rows to show (default 10). |
 | `-x, --exclude <glob>` | Class-name glob to leave out, e.g. `*.Migrations.*`. Repeatable. Also removes it from the overall figure. |
@@ -48,7 +49,7 @@ Exit codes: `0` ok, `1` below `--fail-under`, `2` bad input (missing report/sour
 
 ## How it ranks
 
-Classes are ranked by **number of untaken branches** (a 0/2 class should not outrank a 200/400 one), lowest percentage breaking ties. Classes with no branches and compiler-generated types are dropped; nested and generated types (`Foo/<Bar>d__1`, `Foo.<>c`) count towards the type that declares them.
+Classes are ranked by **number of untaken branches** (a 0/2 class should not outrank a 200/400 one), lowest percentage breaking ties. Classes with no branches, compiler-generated types, framework types (`Microsoft.*`, `System.*`), and common third-party types (for example `Newtonsoft.*`, `Dapper.*`, `Npgsql.*`, `Serilog.*`, `StackExchange.*`, and `Xunit.*`) are dropped; nested and generated types (`Foo/<Bar>d__1`, `Foo.<>c`) count towards the type that declares them.
 
 When reports are merged, a branch line takes the best covered count seen in any report. Cobertura only says "n of m" per line, not *which* branch, so the merged figure can under-report the true union.
 
@@ -59,7 +60,7 @@ When reports are merged, a branch line takes the best covered count seen in any 
 ## Layout
 
 | Project | Role |
-|---|---|
+| --- | --- |
 | `AStarDev.BranchGap.Core` | Models, merge, ranking, use case, abstractions |
 | `AStarDev.BranchGap.Coverage.Cobertura` | Cobertura provider |
 | `AStarDev.BranchGap.Roslyn` | Maps branch lines to members/constructs |
