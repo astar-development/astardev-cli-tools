@@ -86,9 +86,9 @@ public class ProgramShould
 
         var sut = analysis.Classes.Where(f => f.BranchCoverage.Percentage != 100 && f.BranchCoverage.Percentage != 0);
 
-        sut.Sum(s=>s.BranchCoverage.Covered).ShouldBe(2139);
-        sut.Sum(s=>s.BranchCoverage.Total).ShouldBe(2633);
-        sut.Average(s=>s.BranchCoverage.Percentage).ShouldBe(77.4153397786392, 1e-9);
+        sut.Sum(s=>s.BranchCoverage.Covered).ShouldBe(2133);
+        sut.Sum(s=>s.BranchCoverage.Total).ShouldBe(2625);
+        sut.Average(s=>s.BranchCoverage.Percentage).ShouldBe(77.43671446694573, 1e-9);
     }
 
     [Fact]

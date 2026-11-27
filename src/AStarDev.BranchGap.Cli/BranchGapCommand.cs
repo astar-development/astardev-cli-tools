@@ -25,7 +25,7 @@ public static class BranchGapCommand
         var failUnder = new Option<double?>("--fail-under") { Description = "Exit with code 1 when overall branch coverage is below this percentage (0-100)." };
         failUnder.Validators.Add(r => { if (r.GetValueOrDefault<double?>() is { } v && !(v >= 0 && v <= 100)) { r.AddError("--fail-under must be between 0 and 100."); } });
 
-        var sourceRoot = new Option<DirectoryInfo?>("--source-root") { Description = "Folder holding the sources named in the report. Shows which construct each untaken branch is (needs the sources, not just the report)." };
+        var sourceRoot = new Option<DirectoryInfo?>("--source-root") { Description = "Folder holding the sources named in the report. Shows which construct each untaken branch is. Sources must match the revision the report was built from." };
         var level = new Option<ReportLevel>("--level") { Description = "Rank classes (default) or members. Members need --source-root.", DefaultValueFactory = _ => ReportLevel.Class };
 
         var root = new RootCommand("Lists the classes with the most untaken branches.") { reports, top, exclude, format, failUnder, sourceRoot, level };

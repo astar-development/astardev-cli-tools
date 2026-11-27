@@ -71,20 +71,20 @@ public class RoslynBranchSiteLocatorShould
     {
         var site = (await Locate(LineOf("if (a > 0")))[0];
 
-        site.Member.ShouldBe("Outer.Work()");
+        site.Member.ShouldBe("Outer.Work(int, int)");
         site.Construct.ShouldBe("if");
         site.Code.ShouldBe("if (a > 0 && b > 0)");
         (site.Covered, site.Total).ShouldBe((1, 2));
     }
 
     [Theory]
-    [InlineData("foreach (var i", "foreach", "Outer.Work()")]
-    [InlineData("return a switch", "switch expression", "Outer.Work()")]
-    [InlineData("1 => 1", "switch arm", "Outer.Work()")]
-    [InlineData("name ?? ", "??", "Outer..ctor()")]
+    [InlineData("foreach (var i", "foreach", "Outer.Work(int, int)")]
+    [InlineData("return a switch", "switch expression", "Outer.Work(int, int)")]
+    [InlineData("1 => 1", "switch arm", "Outer.Work(int, int)")]
+    [InlineData("name ?? ", "??", "Outer..ctor(string?)")]
     [InlineData("if (value < 0)", "if", "Outer.Prop.set")]
     [InlineData("Environment.TickCount", "?:", "Outer.field (initializer)")]
-    [InlineData("o?.ToString", "?.", "Outer.Inner.Deep()")]
+    [InlineData("o?.ToString", "?.", "Outer.Inner.Deep(object?)")]
     public async Task label_the_construct_and_member(string fragment, string construct, string member)
     {
         var site = (await Locate(LineOf(fragment)))[0];
@@ -103,5 +103,30 @@ public class RoslynBranchSiteLocatorShould
     public async Task ignore_lines_outside_the_file()
     {
         (await Locate(9999)).Count.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task keep_overloads_and_constructors_apart_by_parameter_types()
+    {
+        var path = Path.Combine(Directory.CreateTempSubdirectory().FullName, "O.cs");
+        await File.WriteAllTextAsync(path, "class O\n{\n    O(int a) { if (a > 0) { } }\n    O(string s) { if (s is null) { } }\n    void M(int a) { if (a > 0) { } }\n    void M(long a) { if (a > 0) { } }\n}\n", TestContext.Current.CancellationToken);
+
+        var sites = new RoslynBranchSiteLocator().Locate(path, [new BranchLine(3, 0, 2), new BranchLine(4, 0, 2), new BranchLine(5, 0, 2), new BranchLine(6, 0, 2)]);
+
+        sites.Select(s => s.Member).ShouldBe(["O..ctor(int)", "O..ctor(string)", "O.M(int)", "O.M(long)"]);
+    }
+
+    [Fact]
+    public async Task locate_the_same_file_repeatedly()
+    {
+        var path = Path.Combine(Directory.CreateTempSubdirectory().FullName, "Outer.cs");
+        await File.WriteAllTextAsync(path, Source, TestContext.Current.CancellationToken);
+        var locator = new RoslynBranchSiteLocator();
+
+        var first = locator.Locate(path, [new BranchLine(LineOf("if (a > 0"), 1, 2)]);
+        var second = locator.Locate(path, [new BranchLine(LineOf("foreach (var i"), 1, 2)]);
+
+        first[0].Construct.ShouldBe("if");
+        second[0].Construct.ShouldBe("foreach");
     }
 }

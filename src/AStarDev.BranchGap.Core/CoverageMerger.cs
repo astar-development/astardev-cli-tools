@@ -6,7 +6,7 @@ public static class CoverageMerger
 {
     /// <summary>
     /// Combines entries that share an assembly and type name (several reports, or a type and its nested types).
-    /// Per branch line the best covered count wins.
+    /// Per branch line the entry with the best covered count wins (its total comes with it).
     /// </summary>
     // shortcut: Cobertura only gives "n of m" per line, not which branch, so the max of the inputs is used - it may under-report the union; upgrade if a format with per-branch ids is added.
     public static CoverageAnalysis Merge(IEnumerable<CoverageClass> classes) =>
@@ -20,8 +20,8 @@ public static class CoverageMerger
         var members = group.ToList();
         var lines = members
             .SelectMany(m => m.BranchLines)
-            .GroupBy(l => (l.SourceFile, l.LineNumber))
-            .Select(g => new BranchLine(g.Key.LineNumber, g.Max(l => l.Covered), g.Max(l => l.Total), g.Key.SourceFile))
+            .GroupBy(l => (File: l.SourceFile.Replace('\\', '/'), l.LineNumber))
+            .Select(g => g.OrderByDescending(l => l.Covered).ThenByDescending(l => l.Total).First())
             .OrderBy(l => l.SourceFile, StringComparer.Ordinal).ThenBy(l => l.LineNumber)
             .ToList();
 

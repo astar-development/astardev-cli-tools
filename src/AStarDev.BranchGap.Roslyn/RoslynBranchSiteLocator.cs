@@ -9,25 +9,38 @@ namespace AStarDev.BranchGap.Roslyn;
 
 public sealed class RoslynBranchSiteLocator : IBranchSiteLocator
 {
+    // Each file is parsed once per run however many classes live in it.
+    private readonly Dictionary<string, (SyntaxNode Root, SourceText Source)?> parsed = new(StringComparer.Ordinal);
+
     public IReadOnlyList<BranchSite> Locate(string sourceFile, IReadOnlyList<BranchLine> lines)
     {
-        string text;
-        try
+        if (!parsed.TryGetValue(sourceFile, out var entry))
         {
-            text = File.ReadAllText(sourceFile);
+            entry = Parse(sourceFile);
+            parsed[sourceFile] = entry;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+
+        if (entry is not var (root, source))
         {
             return [];
         }
 
-        var tree = CSharpSyntaxTree.ParseText(text);
-        var root = tree.GetRoot();
-        var source = tree.GetText();
-
         return [.. lines
             .Where(l => l.LineNumber >= 1 && l.LineNumber <= source.Lines.Count)
             .Select(l => ToSite(sourceFile, root, source.Lines[l.LineNumber - 1], l))];
+    }
+
+    private static (SyntaxNode Root, SourceText Source)? Parse(string sourceFile)
+    {
+        try
+        {
+            var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(sourceFile));
+            return (tree.GetRoot(), tree.GetText());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     private static BranchSite ToSite(string sourceFile, SyntaxNode root, TextLine line, BranchLine branchLine)
@@ -74,8 +87,8 @@ public sealed class RoslynBranchSiteLocator : IBranchSiteLocator
 
         var name = member switch
         {
-            MethodDeclarationSyntax m => m.Identifier.Text + "()",
-            ConstructorDeclarationSyntax c => (c.Modifiers.Any(SyntaxKind.StaticKeyword) ? ".cctor" : ".ctor") + "()",
+            MethodDeclarationSyntax m => m.Identifier.Text + Parameters(m.ParameterList),
+            ConstructorDeclarationSyntax c => (c.Modifiers.Any(SyntaxKind.StaticKeyword) ? ".cctor" : ".ctor") + Parameters(c.ParameterList),
             DestructorDeclarationSyntax => "Finalize()",
             OperatorDeclarationSyntax o => "operator " + o.OperatorToken.Text,
             ConversionOperatorDeclarationSyntax => "conversion operator",
@@ -89,6 +102,10 @@ public sealed class RoslynBranchSiteLocator : IBranchSiteLocator
 
         return type.Length == 0 ? name : $"{type}.{name}";
     }
+
+    // Parameter types keep overloads apart in member ranking.
+    private static string Parameters(ParameterListSyntax list) =>
+        "(" + string.Join(", ", list.Parameters.Select(p => p.Type?.ToString() ?? "?")) + ")";
 
     private static string PropertyName(SyntaxNode? node) => node switch
     {
