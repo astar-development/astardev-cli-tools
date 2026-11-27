@@ -2,8 +2,13 @@ using AStarDev.BranchGap.Core.Models;
 
 namespace AStarDev.BranchGap.Core;
 
-public sealed class CoverageRankingService
+public static class CoverageRankingService
 {
+    /// <summary>Largest number of untaken branches first; lowest percentage breaks ties. Classes without branches are dropped.</summary>
     public static IReadOnlyList<CoverageClass> Rank(IEnumerable<CoverageClass> classes) =>
-        [.. classes.OrderBy(x => x.BranchCoverage.Percentage)];
+        [.. classes
+            .Where(c => c.BranchCoverage.Total > 0 && !c.IsCompilerGenerated)
+            .OrderByDescending(c => c.BranchCoverage.Uncovered)
+            .ThenBy(c => c.BranchCoverage.Percentage)
+            .ThenBy(c => c.FullyQualifiedName, StringComparer.Ordinal)];
 }
