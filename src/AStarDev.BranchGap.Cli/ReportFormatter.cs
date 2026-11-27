@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Globalization;
 using AStarDev.BranchGap.Core.Models;
 
 namespace AStarDev.BranchGap.Cli;
@@ -73,17 +74,32 @@ public static class ReportFormatter
         var text = new StringBuilder();
         text.AppendLine(Summary(overall));
         text.AppendLine($"Top {rows.Count} classes by most untaken branches:");
+
+        var untakenWidth = Math.Max("Untaken".Length, rows.Count == 0 ? 0 : rows.Max(r => r.BranchCoverage.Uncovered.ToString(CultureInfo.InvariantCulture).Length));
+        var coverageWidth = Math.Max("Coverage".Length, rows.Count == 0 ? 0 : rows.Max(r => Percentage(r.BranchCoverage).Length));
+        var ratioWidth = Math.Max("(Covered/Total)".Length, rows.Count == 0 ? 0 : rows.Max(r => Ratio(r.BranchCoverage).Length));
+
+        text.AppendLine($"{PadLeft("Untaken", untakenWidth)}  {PadLeft("Coverage", coverageWidth)}  {PadLeft("(Covered/Total)", ratioWidth)}  Class");
         foreach (var row in rows)
         {
-            text.AppendLine($"{row.BranchCoverage.Uncovered,5} untaken  {row.BranchCoverage.Percentage,5:0.#}%  ({row.BranchCoverage.Covered}/{row.BranchCoverage.Total})  {row.FullyQualifiedName}");
+            text.AppendLine($"{PadLeft(row.BranchCoverage.Uncovered.ToString(CultureInfo.InvariantCulture), untakenWidth)}  {PadLeft(Percentage(row.BranchCoverage), coverageWidth)}  {PadLeft(Ratio(row.BranchCoverage), ratioWidth)}  {row.FullyQualifiedName}");
             foreach (var site in sites.GetValueOrDefault(row.FullyQualifiedName) ?? [])
             {
-                text.AppendLine($"                 {site.Member} {SiteLine(site)}");
+                text.AppendLine($"{new string(' ', untakenWidth + coverageWidth + ratioWidth + 6)}{site.Member} {SiteLine(site)}");
             }
         }
 
         return text.ToString();
     }
+
+    private static string Percentage(BranchCoverage coverage) =>
+        coverage.Percentage.ToString("0.0", CultureInfo.InvariantCulture) + "%";
+
+    private static string Ratio(BranchCoverage coverage) =>
+        $"({coverage.Covered.ToString(CultureInfo.InvariantCulture)}/{coverage.Total.ToString(CultureInfo.InvariantCulture)})";
+
+    private static string PadLeft(string text, int width) =>
+        text.PadLeft(width);
 
     private static string Markdown(IReadOnlyList<CoverageClass> rows, BranchCoverage overall, IReadOnlyDictionary<string, IReadOnlyList<BranchSite>> sites)
     {
@@ -136,12 +152,18 @@ public static class ReportFormatter
         var text = new StringBuilder();
         text.AppendLine(Summary(overall));
         text.AppendLine($"Top {rows.Count} members by most untaken branches:");
+
+        var untakenWidth = Math.Max("Untaken".Length, rows.Count == 0 ? 0 : rows.Max(r => r.Coverage.Uncovered.ToString(CultureInfo.InvariantCulture).Length));
+        var coverageWidth = Math.Max("Coverage".Length, rows.Count == 0 ? 0 : rows.Max(r => Percentage(r.Coverage).Length));
+        var ratioWidth = Math.Max("(Covered/Total)".Length, rows.Count == 0 ? 0 : rows.Max(r => Ratio(r.Coverage).Length));
+
+        text.AppendLine($"{PadLeft("Untaken", untakenWidth)}  {PadLeft("Coverage", coverageWidth)}  {PadLeft("(Covered/Total)", ratioWidth)}  Member  File");
         foreach (var row in rows)
         {
-            text.AppendLine($"{row.Coverage.Uncovered,5} untaken  {row.Coverage.Percentage,5:0.#}%  ({row.Coverage.Covered}/{row.Coverage.Total})  {row.Name}  [{Path.GetFileName(row.SourceFile)}]");
+            text.AppendLine($"{PadLeft(row.Coverage.Uncovered.ToString(CultureInfo.InvariantCulture), untakenWidth)}  {PadLeft(Percentage(row.Coverage), coverageWidth)}  {PadLeft(Ratio(row.Coverage), ratioWidth)}  {row.Name}  [{Path.GetFileName(row.SourceFile)}]");
             foreach (var site in row.Sites)
             {
-                text.AppendLine($"                 {SiteLine(site)}");
+                text.AppendLine($"{new string(' ', untakenWidth + coverageWidth + ratioWidth + 6)}{SiteLine(site)}");
             }
         }
 

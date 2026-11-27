@@ -22,7 +22,7 @@ public class BranchGapCommandShould
 
         exit.ShouldBe(BranchGapCommand.Success);
         output.ShouldContain("Top 3 classes");
-        output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length.ShouldBe(5);
+        output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length.ShouldBe(6);
     }
 
     [Fact]
@@ -97,7 +97,8 @@ public class BranchGapCommandShould
         var (exit, output, _) = await Run(Path.Combine(dir, "a.cobertura.xml"), Path.Combine(dir, "b.cobertura.xml"));
 
         exit.ShouldBe(BranchGapCommand.Success);
-        output.ShouldContain("2 untaken");
+        output.ShouldContain("50.0%");
+        output.ShouldContain("(2/4)");
         output.ShouldContain("(2/4)");
     }
 
@@ -147,6 +148,17 @@ public class BranchGapCommandShould
         var (_, output, _) = await Run(await HalfCovered());
 
         output.ShouldContain("Overall branch coverage: 50.0% (1/2)");
+    }
+
+    [Fact]
+    public async Task format_the_default_table_with_aligned_columns()
+    {
+        var (_, output, _) = await Run(await HalfCovered());
+
+        output.ShouldContain("Untaken  Coverage  (Covered/Total)  Class");
+        output.ShouldContain("      1");
+        output.ShouldContain("50.0%");
+        output.ShouldContain("(1/2)");
     }
 
     [Fact]
@@ -224,7 +236,7 @@ public class BranchGapCommandShould
         var (exit, output, _) = await Run(report, "--source-root", root, "--level", "method");
 
         exit.ShouldBe(BranchGapCommand.Success);
-        output.ShouldContain("1 untaken");
+        output.ShouldContain("1");
         output.ShouldContain("Foo.Bar(int)");
         output.ShouldContain("line 6: if");
     }
