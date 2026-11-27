@@ -72,4 +72,69 @@ public class BranchGapCommandShould
         exit.ShouldNotBe(BranchGapCommand.Success);
         error.ShouldContain("--top must be at least 1.");
     }
+
+    private static string Cobertura(string cls, string lines) =>
+        $"""<coverage><packages><package name="P"><classes><class name="{cls}" filename="{cls}.cs"><lines>{lines}</lines></class></classes></package></packages></coverage>""";
+
+    private static async Task<string> TempDir(params (string Name, string Xml)[] files)
+    {
+        var dir = Directory.CreateTempSubdirectory().FullName;
+        foreach (var (name, xml) in files)
+        {
+            await File.WriteAllTextAsync(Path.Combine(dir, name), xml, TestContext.Current.CancellationToken);
+        }
+
+        return dir;
+    }
+
+    [Fact]
+    public async Task merge_reports_so_a_branch_covered_in_any_report_counts_as_covered()
+    {
+        var dir = await TempDir(
+            ("a.cobertura.xml", Cobertura("Foo", """<line number="1" branch="True" condition-coverage="50% (1/2)" /><line number="2" branch="True" condition-coverage="0% (0/2)" />""")),
+            ("b.cobertura.xml", Cobertura("Foo", """<line number="1" branch="True" condition-coverage="100% (2/2)" /><line number="2" branch="True" condition-coverage="0% (0/2)" />""")));
+
+        var (exit, output, _) = await Run(Path.Combine(dir, "a.cobertura.xml"), Path.Combine(dir, "b.cobertura.xml"));
+
+        exit.ShouldBe(BranchGapCommand.Success);
+        output.ShouldContain("2 untaken");
+        output.ShouldContain("(2/4)");
+    }
+
+    [Fact]
+    public async Task expand_a_wildcard_report_argument()
+    {
+        var dir = await TempDir(
+            ("a.cobertura.xml", Cobertura("Foo", """<line number="1" branch="True" condition-coverage="0% (0/2)" />""")),
+            ("b.cobertura.xml", Cobertura("Bar", """<line number="1" branch="True" condition-coverage="0% (0/4)" />""")),
+            ("ignore.txt", "x"));
+
+        var (_, output, _) = await Run(Path.Combine(dir, "*.cobertura.xml"));
+
+        output.ShouldContain("Foo");
+        output.ShouldContain("Bar");
+    }
+
+    [Fact]
+    public async Task fail_with_bad_input_when_a_wildcard_matches_nothing()
+    {
+        var dir = await TempDir();
+
+        var (exit, _, error) = await Run(Path.Combine(dir, "*.xml"));
+
+        exit.ShouldBe(BranchGapCommand.BadInput);
+        error.ShouldContain("Report not found");
+    }
+
+    [Fact]
+    public async Task search_subfolders_when_the_directory_contains_a_double_star()
+    {
+        var dir = await TempDir();
+        Directory.CreateDirectory(Path.Combine(dir, "x", "y"));
+        await File.WriteAllTextAsync(Path.Combine(dir, "x", "y", "deep.cobertura.xml"), Cobertura("Deep", """<line number="1" branch="True" condition-coverage="0% (0/2)" />"""), TestContext.Current.CancellationToken);
+
+        var (_, output, _) = await Run(Path.Combine(dir, "**", "*.cobertura.xml"));
+
+        output.ShouldContain("Deep");
+    }
 }

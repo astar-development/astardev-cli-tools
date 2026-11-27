@@ -22,13 +22,15 @@ public static class BranchGapCommand
         var root = new RootCommand("Lists the classes with the most untaken branches.") { reports, top, exclude };
         root.SetAction(async (parse, cancellationToken) =>
         {
-            var paths = parse.GetValue(reports)!;
-            var missing = paths.FirstOrDefault(p => !File.Exists(p));
-            if (missing is not null)
+            var requested = parse.GetValue(reports)!;
+            var unresolved = requested.FirstOrDefault(r => ReportPaths.Expand([r]) is not { Count: > 0 } found || found.Any(f => !File.Exists(f)));
+            if (unresolved is not null)
             {
-                await error.WriteLineAsync($"Report not found: {missing}");
+                await error.WriteLineAsync($"Report not found: {unresolved}");
                 return BadInput;
             }
+
+            var paths = ReportPaths.Expand(requested);
 
             try
             {
