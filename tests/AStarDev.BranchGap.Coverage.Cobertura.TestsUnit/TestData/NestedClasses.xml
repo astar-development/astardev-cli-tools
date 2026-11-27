@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coverage version="1.9">
+  <packages>
+    <package name="My.Assembly">
+      <classes>
+        <class name="My.Ns.Foo" filename="Foo.cs">
+          <methods>
+            <method name="A" signature="()">
+              <lines>
+                <line number="10" hits="1" branch="True" condition-coverage="50% (1/2)" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="10" hits="1" branch="True" condition-coverage="50% (1/2)" />
+          </lines>
+        </class>
+        <class name="My.Ns.Foo/&lt;B&gt;d__1" filename="Foo.cs">
+          <lines>
+            <line number="20" hits="1" branch="True" condition-coverage="0% (0/4)" />
+          </lines>
+        </class>
+        <class name="My.Ns.Foo.&lt;&gt;c" filename="Foo.cs">
+          <lines>
+            <line number="30" hits="1" branch="True" condition-coverage="100% (2/2)" />
+          </lines>
+        </class>
+        <class name="&lt;Module&gt;" filename="Foo.cs">
+          <lines>
+            <line number="1" hits="1" branch="True" condition-coverage="0% (0/2)" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>

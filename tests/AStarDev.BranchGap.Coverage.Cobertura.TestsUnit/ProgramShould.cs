@@ -30,9 +30,10 @@ public class ProgramShould
     {
         var analysis = await provider.LoadAsync(TestFile.GetPath("RealCoverage.xml"), TestContext.Current.CancellationToken);
 
-        analysis.Classes.Count.ShouldBe(1687);
+        analysis.Classes.Count.ShouldBe(703);
 
-        analysis.Classes[0].FullyQualifiedName.ShouldBe("AStarDev.CloudSync.Domain.Account");
+        analysis.Classes[0].FullyQualifiedName.ShouldBe("AStarDev.CloudSync.Classification.ClassificationCandidate");
+        analysis.Classes[0].AssemblyName.ShouldBe("AStarDev.CloudSync.Classification");
     }
 
     [Fact]
@@ -42,8 +43,8 @@ public class ProgramShould
 
         var sut = analysis.Classes.First(f => f.BranchCoverage.Percentage != 100 && f.BranchCoverage.Percentage != 0);
 
-        sut.BranchCoverage.Covered.ShouldBe(4);
-        sut.BranchCoverage.Total.ShouldBe(8);
+        sut.BranchCoverage.Covered.ShouldBe(1);
+        sut.BranchCoverage.Total.ShouldBe(2);
         sut.BranchCoverage.Percentage.ShouldBe(50);
     }
 
@@ -85,8 +86,28 @@ public class ProgramShould
 
         var sut = analysis.Classes.Where(f => f.BranchCoverage.Percentage != 100 && f.BranchCoverage.Percentage != 0);
 
-        sut.Sum(s=>s.BranchCoverage.Covered).ShouldBe(3084);
-        sut.Sum(s=>s.BranchCoverage.Total).ShouldBe(4012);
-        sut.Average(s=>s.BranchCoverage.Percentage).ShouldBe(68.3312332945448);
+        sut.Sum(s=>s.BranchCoverage.Covered).ShouldBe(2139);
+        sut.Sum(s=>s.BranchCoverage.Total).ShouldBe(2633);
+        sut.Average(s=>s.BranchCoverage.Percentage).ShouldBe(77.4153397786392, 1e-9);
+    }
+
+    [Fact]
+    public async Task roll_nested_and_generated_types_into_the_declaring_type_and_drop_module()
+    {
+        var analysis = await provider.LoadAsync(TestFile.GetPath("NestedClasses.xml"), TestContext.Current.CancellationToken);
+
+        analysis.Classes.Count.ShouldBe(1);
+        var foo = analysis.Classes[0];
+        foo.FullyQualifiedName.ShouldBe("My.Ns.Foo");
+        foo.AssemblyName.ShouldBe("My.Assembly");
+        foo.BranchCoverage.ShouldBe(new BranchCoverage(3, 8));
+    }
+
+    [Fact]
+    public async Task count_a_branch_line_once_when_the_class_repeats_it_under_a_method()
+    {
+        var analysis = await provider.LoadAsync(TestFile.GetPath("NestedClasses.xml"), TestContext.Current.CancellationToken);
+
+        analysis.Classes[0].BranchLines.Single(l => l.LineNumber == 10).ShouldBe(new BranchLine(10, 1, 2));
     }
 }
